@@ -1,0 +1,11 @@
+// jar包的名字
+archivesBaseName = 'core'
+
+dependencies {
+
+    compile(
+            libraries.'servlet-api',
+            libraries.'jsp-api'
+    )
+
+}

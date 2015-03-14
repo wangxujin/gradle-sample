@@ -1,0 +1,111 @@
+allprojects {
+    group = 'com.***.gradle'
+    version = '1.0-SNAPSHOT'
+}
+
+apply plugin: 'java'
+
+
+apply from: 'dependencyDefinitions.gradle'
+
+// 所有子项目的通用配置
+subprojects {
+
+    apply plugin: 'java'
+    apply plugin: 'groovy'
+    apply plugin: 'maven'
+    apply plugin: 'eclipse'
+    apply plugin: 'idea'
+
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
+    [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+    repositories {
+        mavenLocal()
+        maven {
+            url 'http://maven.oschina.net/content/groups/public'
+        }
+        maven {
+            url 'http://repo.springsource.org/release'
+        }
+    }
+
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                mavenLocal()
+            }
+        }
+    }
+
+    configurations {
+        provided
+        provided.extendsFrom(compile)
+    }
+
+    configurations.all {
+        resolutionStrategy.cacheDynamicVersionsFor 7, 'days'
+        resolutionStrategy.cacheChangingModulesFor 24, 'hours'
+    }
+
+    sourceSets {
+        main.compileClasspath += configurations.provided
+        test.compileClasspath += configurations.provided
+        test.runtimeClasspath += configurations.provided
+    }
+
+    javadoc.classpath += configurations.provided
+
+    eclipse {
+        classpath {
+            defaultOutputDir = file('build')
+            downloadSources = true
+            downloadJavadoc = true
+            plusConfigurations += [configurations.provided]
+        }
+    }
+
+    idea {
+        module {
+            downloadJavadoc = true
+            downloadSources = true
+            scopes.PROVIDED.plus += [configurations.provided]
+        }
+    }
+
+    dependencies {
+        // 通用依赖
+        compile(
+                libraries.'slf4j-api',
+                libraries.'log4j-over-slf4j'
+        )
+
+        // 测试依赖
+        testCompile(
+                libraries.'junit',
+                libraries.'spring-test'
+        )
+    }
+
+    // 显示当前项目下所有用于 compile 的 jar.
+    task listJars(description: 'Display all compile jars.') << {
+        configurations.compile.each { File file -> println file.name }
+    }
+}
+
